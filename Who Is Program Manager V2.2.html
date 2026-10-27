@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目大老板 / Project Boss</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  background: radial-gradient(circle at 30% 20%, #1e2749 0%, #0d1117 60%, #05070c 100%);
+  color: #e6edf3;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ===== 开始界面 ===== */
+#startScreen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 28px; padding: 20px; z-index: 100;
+  background: radial-gradient(circle at 50% 30%, #1c2a4a 0%, #0a0e17 70%);
+  transition: opacity 0.4s;
+}
+#startScreen.fade-out { opacity: 0; pointer-events: none; }
+
+.title-block { text-align: center; }
+.title-block h1 {
+  font-size: clamp(2rem, 6vw, 3.6rem);
+  font-weight: 800; letter-spacing: 2px;
+  background: linear-gradient(90deg, #e74c3c, #e67e22, #f1c40f, #2ecc71, #3498db);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; margin-bottom: 8px;
+}
+.title-block p {
+  color: #8b98a9; font-size: clamp(0.85rem, 2vw, 1.1rem);
+  letter-spacing: 1px;
+}
+
+.option-group { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.option-group label {
+  font-size: 0.95rem; color: #9aa7b8;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.option-row { display: flex; gap: 10px; }
+.opt-btn {
+  padding: 10px 22px; font-size: 1rem; font-weight: 600;
+  border: 2px solid #2d3748; background: #161b22; color: #c9d1d9;
+  border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  font-family: inherit;
+}
+.opt-btn:hover { border-color: #4a5568; background: #1c2333; }
+.opt-btn.active {
+  border-color: #58a6ff; background: #0d2a4d; color: #58a6ff;
+  box-shadow: 0 0 16px rgba(88, 166, 255, 0.25);
+}
+
+#startBtn {
+  margin-top: 12px; padding: 16px 64px;
+  font-size: 1.15rem; font-weight: 700; letter-spacing: 2px;
+  border: none; border-radius: 12px; cursor: pointer;
+  color: #0a0e17;
+  background: linear-gradient(135deg, #f1c40f, #e67e22);
+  box-shadow: 0 6px 24px rgba(230, 126, 34, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+#startBtn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(230, 126, 34, 0.55); }
+#startBtn:active { transform: translateY(0); }
+
+/* ===== 游戏界面 ===== */
+#gameScreen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; transition: opacity 0.4s;
+}
+#gameScreen.hidden { opacity: 0; pointer-events: none; }
+
+#topBar {
+  width: min(94vmin, 94vh);
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 4px;
+}
+#roundDisplay {
+  font-size: clamp(0.9rem, 2.2vmin, 1.3rem);
+  font-weight: 700; color: #f1c40f; letter-spacing: 1px;
+  background: rgba(241, 196, 15, 0.1);
+  border: 1px solid rgba(241, 196, 15, 0.3);
+  padding: 6px 16px; border-radius: 8px;
+}
+#resetBtn {
+  font-family: inherit; font-size: clamp(0.75rem, 1.6vmin, 0.95rem);
+  padding: 6px 16px; background: transparent;
+  border: 1px solid #30363d; color: #8b98a9;
+  border-radius: 8px; cursor: pointer; transition: all 0.2s;
+}
+#resetBtn:hover { border-color: #e74c3c; color: #e74c3c; }
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  width: min(88vmin, 88vh); height: min(88vmin, 88vh);
+  gap: 0.6vmin; padding: 0.6vmin;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+.cell {
+  position: relative; border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.3vmin; padding: 0.4vmin;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cell:hover { transform: scale(1.03); box-shadow: 0 0 14px rgba(255, 255, 255, 0.12); z-index: 5; }
+
+.cell-project { background: linear-gradient(160deg, #16325c 0%, #0f2342 100%); border-color: rgba(241, 196, 15, 0.25); }
+.cell-draw    { background: linear-gradient(160deg, #2a1f45 0%, #1a1430 100%); border-color: rgba(155, 89, 182, 0.3); }
+.cell-rest    { background: linear-gradient(160deg, #1a1f2e 0%, #10141d 100%); border-color: rgba(139, 152, 169, 0.15); }
+
+.cell-title {
+  font-size: clamp(0.45rem, 1.2vmin, 0.78rem);
+  font-weight: 700; color: #dce6f0; text-align: center;
+  line-height: 1.15; padding: 0 2px; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cell-reqs {
+  display: flex; gap: 0.35vmin; flex-wrap: wrap;
+  justify-content: center;
+}
+.req-dot {
+  width: 1.4vmin; height: 1.4vmin;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.cell-icon { font-size: clamp(0.9rem, 2.6vmin, 1.6rem); line-height: 1; }
+.cell-label {
+  font-size: clamp(0.45rem, 1.1vmin, 0.7rem);
+  color: #8b98a9; letter-spacing: 0.5px;
+}
+
+.marker-area {
+  position: absolute; bottom: 0.3vmin; left: 0.3vmin; right: 0.3vmin;
+  display: flex; flex-wrap: wrap; gap: 0.3vmin;
+  justify-content: center; pointer-events: none; z-index: 3;
+}
+.player-marker {
+  width: clamp(1rem, 2.8vmin, 2rem);
+  height: clamp(1rem, 2.8vmin, 2rem);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(0.45rem, 1.3vmin, 0.85rem);
+  font-weight: 800; color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cell-overlay {
+  position: absolute; inset: 0; opacity: 0;
+  pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; z-index: 4; transition: opacity 0.35s;
+}
+.cell-overlay.active { opacity: 1; }
+.cell-overlay.completed {
+  background: linear-gradient(145deg, #f1c40f 0%, #e67e22 100%);
+  color: #0a0e17;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+.cell-overlay.skipped { background: rgba(231, 76, 60, 0.85); }
+.payout-mini { text-align: center; line-height: 1.1; }
+.payout-mini-label {
+  font-size: clamp(0.4rem, 1vmin, 0.65rem);
+  font-weight: 700; letter-spacing: 1px; opacity: 0.75;
+}
+.payout-mini-amount {
+  font-size: clamp(0.8rem, 2.2vmin, 1.5rem);
+  font-weight: 900;
+}
+.x-mark {
+  font-size: clamp(2rem, 6vmin, 4rem);
+  font-weight: 900; color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.center-panel {
+  grid-column: 2 / 5; grid-row: 2 / 5;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 1.6vmin;
+  background: radial-gradient(circle at 50% 40%, #1a2540 0%, #0b0f1a 100%);
+  border-radius: 14px;
+  border: 1px solid rgba(88, 166, 255, 0.15);
+  padding: 2vmin;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+.cp-current {
+  display: flex; align-items: center; gap: 1vmin;
+  padding: 0.6vmin 1.6vmin;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cp-dot {
+  width: clamp(0.7rem, 2vmin, 1.3rem);
+  height: clamp(0.7rem, 2vmin, 1.3rem);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 10px currentColor;
+}
+.cp-name {
+  font-size: clamp(0.7rem, 1.8vmin, 1.05rem);
+  font-weight: 700; letter-spacing: 0.5px;
+}
+
+.dice {
+  font-size: clamp(2.6rem, 9vmin, 5rem);
+  font-weight: 900; color: #f1c40f;
+  text-shadow: 0 0 24px rgba(241, 196, 15, 0.5);
+  min-width: 1.3em; text-align: center; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dice.rolling { animation: diceShake 0.12s infinite; }
+.dice-result {
+  font-size: clamp(0.55rem, 1.4vmin, 0.85rem);
+  color: #8b98a9; letter-spacing: 1px; min-height: 1.2em;
+}
+
+.roll-btn {
+  font-family: inherit;
+  padding: 1.2vmin 4vmin;
+  font-size: clamp(0.75rem, 2vmin, 1.1rem);
+  font-weight: 700; letter-spacing: 1.5px;
+  border: none; border-radius: 10px; cursor: pointer;
+  color: #0a0e17;
+  background: linear-gradient(135deg, #58a6ff, #1f6feb);
+  box-shadow: 0 4px 18px rgba(31, 111, 235, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+}
+.roll-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 26px rgba(31, 111, 235, 0.55); }
+.roll-btn:active:not(:disabled) { transform: translateY(0); }
+.roll-btn:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+/* ===== 模态框 ===== */
+#modalOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 20px;
+  transition: opacity 0.25s;
+}
+#modalOverlay.hidden { opacity: 0; pointer-events: none; }
+
+.modal-body {
+  background: linear-gradient(160deg, #161d2b 0%, #0d1119 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: clamp(20px, 4vmin, 40px);
+  max-width: min(560px, 92vw); width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.8);
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-height: 90vh; overflow-y: auto;
+}
+
+.modal-player {
+  font-size: clamp(0.7rem, 1.6vmin, 0.9rem);
+  font-weight: 700; letter-spacing: 1px;
+  margin-bottom: 6px; opacity: 0.85;
+}
+.modal-title {
+  font-size: clamp(1.3rem, 3.6vmin, 2rem);
+  font-weight: 800; margin-bottom: clamp(10px, 2vmin, 16px);
+  color: #f1c40f;
+}
+.modal-payout { margin-bottom: clamp(4px, 1vmin, 8px); }
+.payout-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #f1c40f, #e67e22);
+  color: #0a0e17;
+  font-weight: 900;
+  padding: 6px 26px;
+  border-radius: 8px;
+  font-size: clamp(1rem, 2.4vmin, 1.4rem);
+  letter-spacing: 1px;
+}
+.payout-hint-small {
+  font-size: clamp(0.55rem, 1.2vmin, 0.75rem);
+  color: #8b98a9;
+  letter-spacing: 1px;
+  margin-bottom: clamp(10px, 2vmin, 14px);
+}
+.modal-reqs-label {
+  font-size: clamp(0.65rem, 1.4vmin, 0.85rem);
+  color: #8b98a9; letter-spacing: 1.5px;
+  margin-bottom: 10px; text-transform: uppercase;
+}
+.modal-reqs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center; margin-bottom: clamp(14px, 2.8vmin, 22px);
+}
+.req-item {
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: clamp(0.8rem, 1.9vmin, 1.05rem);
+  font-weight: 700; letter-spacing: 0.5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.modal-question {
+  font-size: clamp(0.9rem, 2.2vmin, 1.15rem);
+  color: #c9d1d9;
+  margin-bottom: clamp(16px, 3vmin, 24px);
+  font-weight: 600;
+}
+.stage-hint {
+  display: inline-block;
+  background: rgba(241, 196, 15, 0.15);
+  border: 1px solid rgba(241, 196, 15, 0.4);
+  color: #f1c40f;
+  padding: 6px 18px;
+  border-radius: 20px;
+  font-size: clamp(0.7rem, 1.6vmin, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+.btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  font-family: inherit;
+  padding: 14px 36px;
+  font-size: clamp(0.85rem, 1.9vmin, 1rem);
+  font-weight: 700; letter-spacing: 1px;
+  border: none; border-radius: 12px; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn-complete {
+  color: #0a0e17;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+.btn-skip {
+  color: #fff;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+.btn-neutral {
+  color: #e6edf3;
+  background: linear-gradient(135deg, #30363d, #21262d);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.payout-card {
+  background: linear-gradient(145deg, #f1c40f, #e67e22);
+  color: #0a0e17;
+  border-radius: 16px;
+  padding: clamp(20px, 4vmin, 36px) clamp(30px, 6vmin, 60px);
+  margin-bottom: clamp(18px, 3.5vmin, 28px);
+  box-shadow: 0 12px 40px rgba(230, 126, 34, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+.payout-label {
+  font-size: clamp(0.65rem, 1.5vmin, 0.9rem);
+  font-weight: 800; letter-spacing: 2px;
+  opacity: 0.7; margin-bottom: 4px;
+}
+.payout-amount {
+  font-size: clamp(1.8rem, 6vmin, 3.4rem);
+  font-weight: 900; line-height: 1.1;
+}
+
+/* 倒计时 */
+.countdown-display {
+  font-size: clamp(5rem, 18vmin, 10rem);
+  font-weight: 900; color: #f1c40f;
+  text-shadow: 0 0 40px rgba(241, 196, 15, 0.5);
+  line-height: 1; margin: 10px 0;
+  font-variant-numeric: tabular-nums;
+}
+.countdown-display.pulse { animation: countPulse 1s ease-out; }
+@keyframes countPulse {
+  0% { transform: scale(1.3); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.countdown-label {
+  font-size: clamp(0.8rem, 1.8vmin, 1rem);
+  color: #8b98a9; letter-spacing: 2px; margin-top: 8px;
+}
+
+.modal-content-text {
+  font-size: clamp(0.9rem, 2.1vmin, 1.1rem);
+  color: #c9d1d9;
+  margin-bottom: clamp(18px, 3.5vmin, 28px);
+  line-height: 1.6;
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 30px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #161d2b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 4px solid #58a6ff;
+  color: #e6edf3;
+  padding: 14px 28px; border-radius: 10px;
+  font-size: clamp(0.75rem, 1.7vmin, 0.95rem);
+  font-weight: 600; letter-spacing: 0.5px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  z-index: 300; opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none; max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes modalIn {
+  0% { transform: scale(0.85) translateY(20px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+@keyframes diceShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-3px, 2px) rotate(-8deg); }
+  50% { transform: translate(2px, -2px) rotate(6deg); }
+  75% { transform: translate(-2px, -1px) rotate(-4deg); }
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- 开始界面 -->
+<div id="startScreen">
+  <div class="title-block">
+    <h1 id="startTitle">项目大老板</h1>
+    <p id="startSubtitle">模拟轨道盘 · Project Boss Simulator</p>
+  </div>
+  <div class="option-group">
+    <label id="langLabel">语言 / Language</label>
+    <div class="option-row" id="langRow">
+      <button class="opt-btn active" data-lang="zh">中文</button>
+      <button class="opt-btn" data-lang="en">English</button>
+    </div>
+  </div>
+  <div class="option-group">
+    <label id="playerLabel">玩家人数 / Players</label>
+    <div class="option-row" id="playerRow">
+      <button class="opt-btn active" data-count="4">4</button>
+      <button class="opt-btn" data-count="5">5</button>
+    </div>
+  </div>
+  <button id="startBtn">开始游戏</button>
+</div>
+
+<!-- 游戏界面 -->
+<div id="gameScreen" class="hidden">
+  <div id="topBar">
+    <div id="roundDisplay"></div>
+    <button id="resetBtn"></button>
+  </div>
+  <div id="board"></div>
+</div>
+
+<!-- 模态框 -->
+<div id="modalOverlay" class="hidden">
+  <div id="modalBody" class="modal-body"></div>
+</div>
+
+<script>
+/* =====================================================
+   数据定义
+   ===================================================== */
+
+const PROFESSIONS = [
+  { id: 'dev',     color: 'red',    hex: '#e74c3c', nameZh: '开发', nameEn: 'Development' },
+  { id: 'design',  color: 'orange', hex: '#e67e22', nameZh: '设计', nameEn: 'Design' },
+  { id: 'market',  color: 'yellow', hex: '#f1c40f', nameZh: '市场', nameEn: 'Marketing' },
+  { id: 'ops',     color: 'green',  hex: '#2ecc71', nameZh: '运营', nameEn: 'Operations' },
+  { id: 'finance', color: 'blue',   hex: '#3498db', nameZh: '财务', nameEn: 'Finance' },
+];
+
+const BOARD_LAYOUT = [
+  { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 }, { row: 1, col: 4 }, { row: 1, col: 5 },
+  { row: 2, col: 5 }, { row: 3, col: 5 }, { row: 4, col: 5 },
+  { row: 5, col: 5 }, { row: 5, col: 4 }, { row: 5, col: 3 }, { row: 5, col: 2 }, { row: 5, col: 1 },
+  { row: 4, col: 1 }, { row: 3, col: 1 }, { row: 2, col: 1 },
+];
+
+const BOARD = [
+  { type: 'rest' },
+  { type: 'project', nameZh: '网站改版', nameEn: 'Website Redesign', reqs: ['dev', 'design', 'market'] },
+  { type: 'draw' },
+  { type: 'project', nameZh: '品牌营销', nameEn: 'Brand Marketing', reqs: ['design', 'ops', 'finance'] },
+  { type: 'rest' },
+  { type: 'draw' },
+  { type: 'project', nameZh: '数据迁移', nameEn: 'Data Migration', reqs: ['dev', 'design', 'market', 'ops'] },
+  { type: 'draw' },
+  { type: 'rest' },
+  { type: 'project', nameZh: '预算审核', nameEn: 'Budget Review', reqs: ['dev', 'market', 'ops', 'finance'] },
+  { type: 'draw' },
+  { type: 'project', nameZh: '产品发布', nameEn: 'Product Launch', reqs: ['dev', 'design', 'market', 'ops', 'finance'] },
+  { type: 'rest' },
+  { type: 'draw' },
+  { type: 'project', nameZh: '全面升级', nameEn: 'Full Upgrade', reqs: ['dev', 'design', 'market', 'ops', 'finance'] },
+  { type: 'draw' },
+];
+
+const CELL_COUNT = BOARD.length;
+
+/* =====================================================
+   翻译
+   ===================================================== */
+const T = {
+  zh: {
+    title: '项目大老板',
+    subtitle: '模拟轨道盘 · Project Boss Simulator',
+    langLabel: '语言 / Language',
+    playerLabel: '玩家人数 / Players',
+    start: '开始游戏',
+    round: '回合',
+    player: '玩家',
+    roll: '掷骰子',
+    rolling: '骰子滚动中…',
+    diceResult: '骰子点数',
+    requirements: '所需人员',
+    doProject: '是否完成该项目？',
+    complete: '完成',
+    skip: '不完成',
+    payout: '结款金额',
+    continueBtn: '继续',
+    draw: '抽牌',
+    drewCard: '抽到1张牌',
+    drewCardContent: '已加入手牌（暗牌）',
+    rest: '休息格',
+    nextRound: '新回合开始！回合',
+    confirm: '确定',
+    reset: '重置游戏',
+    resetConfirm: '确定要重置游戏吗？',
+    confirmAgain: '再次确认',
+    countdownLabel: '倒计时结束后再次确认',
+    payoutHint: '若完成，将获得此金额',
+    gameOver: '游戏结束',
+    gameOverContent: '所有项目均已判定，游戏结束。',
+    restart: '重新开始',
+  },
+  en: {
+    title: 'Project Boss',
+    subtitle: 'Board Simulator',
+    langLabel: 'Language / 语言',
+    playerLabel: 'Players / 玩家人数',
+    start: 'Start Game',
+    round: 'Round',
+    player: 'Player',
+    roll: 'Roll Dice',
+    rolling: 'Rolling…',
+    diceResult: 'Dice',
+    requirements: 'Required Staff',
+    doProject: 'Complete this project?',
+    complete: 'Complete',
+    skip: 'Skip',
+    payout: 'Payout',
+    continueBtn: 'Continue',
+    draw: 'Draw Card',
+    drewCard: 'Drew 1 Card',
+    drewCardContent: 'Added to hand (hidden)',
+    rest: 'Rest',
+    nextRound: 'New round started! Round',
+    confirm: 'OK',
+    reset: 'Reset Game',
+    resetConfirm: 'Reset the game?',
+    confirmAgain: 'Confirm Again',
+    countdownLabel: 'Confirm again after countdown',
+    payoutHint: 'If completed, you will receive this payout',
+    gameOver: 'Game Over',
+    gameOverContent: 'All projects have been decided. The game is over.',
+    restart: 'Restart',
+  }
+};
+
+/* =====================================================
+   游戏状态
+   ===================================================== */
+const state = {
+  lang: 'zh',
+  playerCount: 4,
+  players: [],
+  currentPlayerIndex: 0,
+  roundNumber: 1,
+  turnsThisRound: 0,
+  board: [],
+  projectStates: {},
+  isRolling: false,
+  started: false,
+  completedCount: 0,
+  gameOver: false,
+};
+
+function t(key) { return T[state.lang][key] || key; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function profById(id) { return PROFESSIONS.find(p => p.id === id); }
+function profName(p) { return state.lang === 'zh' ? p.nameZh : p.nameEn; }
+
+function formatPayout(payout) {
+  if (state.lang === 'zh') return `${payout}万`;
+  return `${payout * 10}K`;
+}
+
+/* 判断某格是否为已判定的项目格 */
+function isDecidedProject(index) {
+  const cell = state.board[index];
+  if (!cell || cell.type !== 'project') return false;
+  const ps = state.projectStates[index];
+  return ps && (ps.status === 'completed' || ps.status === 'skipped');
+}
+
+/* =====================================================
+   开始界面逻辑
+   ===================================================== */
+let pendingLang = 'zh';
+let pendingCount = 4;
+
+document.querySelectorAll('#langRow .opt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#langRow .opt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pendingLang = btn.dataset.lang;
+    state.lang = pendingLang;
+    updateStartScreenText();
+  });
+});
+
+document.querySelectorAll('#playerRow .opt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#playerRow .opt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pendingCount = parseInt(btn.dataset.count);
+  });
+});
+
+function updateStartScreenText() {
+  document.getElementById('startTitle').textContent = t('title');
+  document.getElementById('startSubtitle').textContent = t('subtitle');
+  document.getElementById('langLabel').textContent = t('langLabel');
+  document.getElementById('playerLabel').textContent = t('playerLabel');
+  document.getElementById('startBtn').textContent = t('start');
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  state.lang = pendingLang;
+  state.playerCount = pendingCount;
+  startGame();
+});
+
+/* =====================================================
+   游戏初始化
+   ===================================================== */
+function startGame() {
+  state.started = true;
+  state.players = [];
+  state.currentPlayerIndex = 0;
+  state.roundNumber = 1;
+  state.turnsThisRound = 0;
+  state.projectStates = {};
+  state.isRolling = false;
+  state.completedCount = 0;
+  state.gameOver = false;
+  state.board = BOARD.map(b => ({ ...b }));
+
+  const shuffled = [...PROFESSIONS].sort(() => Math.random() - 0.5);
+  const chosen = shuffled.slice(0, state.playerCount);
+
+  chosen.forEach((prof, i) => {
+    state.players.push({
+      id: i,
+      name: `${t('player')} ${i + 1}`,
+      nameShort: String(i + 1),
+      profession: prof.id,
+      hex: prof.hex,
+      position: 0,
+    });
+  });
+
+  document.getElementById('startScreen').classList.add('fade-out');
+  const gameEl = document.getElementById('gameScreen');
+  gameEl.classList.remove('hidden');
+
+  buildBoard();
+  updateMarkers();
+  updateCenterPanel();
+  updateRoundDisplay();
+  document.getElementById('resetBtn').textContent = t('reset');
+
+  setTimeout(() => {
+    document.getElementById('startScreen').style.display = 'none';
+    gameEl.style.opacity = '1';
+  }, 400);
+}
+
+/* =====================================================
+   棋盘构建
+   ===================================================== */
+function buildBoard() {
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+
+  BOARD_LAYOUT.forEach((pos, index) => {
+    boardEl.appendChild(createCellElement(index, pos));
+  });
+
+  const center = document.createElement('div');
+  center.className = 'center-panel';
+  center.id = 'centerPanel';
+  center.innerHTML = `
+    <div class="cp-current">
+      <div class="cp-dot" id="cpDot"></div>
+      <div class="cp-name" id="cpName"></div>
+    </div>
+    <div class="dice" id="dice">🎲</div>
+    <div class="dice-result" id="diceResult"></div>
+    <button class="roll-btn" id="rollBtn"></button>
+  `;
+  boardEl.appendChild(center);
+
+  document.getElementById('rollBtn').addEventListener('click', rollDice);
+}
+
+function createCellElement(index, pos) {
+  const cell = state.board[index];
+  const el = document.createElement('div');
+  el.className = 'cell cell-' + cell.type;
+  el.dataset.index = index;
+  el.style.gridRow = pos.row;
+  el.style.gridColumn = pos.col;
+
+  if (cell.type === 'project') {
+    const title = document.createElement('div');
+    title.className = 'cell-title';
+    title.textContent = state.lang === 'zh' ? cell.nameZh : cell.nameEn;
+    el.appendChild(title);
+
+    const reqs = document.createElement('div');
+    reqs.className = 'cell-reqs';
+    cell.reqs.forEach(profId => {
+      const prof = profById(profId);
+      const dot = document.createElement('div');
+      dot.className = 'req-dot';
+      dot.style.background = prof.hex;
+      dot.style.color = prof.hex;
+      dot.title = profName(prof);
+      reqs.appendChild(dot);
+    });
+    el.appendChild(reqs);
+  } else if (cell.type === 'draw') {
+    const icon = document.createElement('div');
+    icon.className = 'cell-icon';
+    icon.textContent = '🃏';
+    el.appendChild(icon);
+    const label = document.createElement('div');
+    label.className = 'cell-label';
+    label.textContent = t('draw');
+    el.appendChild(label);
+  } else {
+    const icon = document.createElement('div');
+    icon.className = 'cell-icon';
+    icon.textContent = '☕';
+    el.appendChild(icon);
+    const label = document.createElement('div');
+    label.className = 'cell-label';
+    label.textContent = t('rest');
+    el.appendChild(label);
+  }
+
+  const markerArea = document.createElement('div');
+  markerArea.className = 'marker-area';
+  el.appendChild(markerArea);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'cell-overlay';
+  el.appendChild(overlay);
+
+  return el;
+}
+
+/* =====================================================
+   棋子渲染
+   ===================================================== */
+function updateMarkers() {
+  document.querySelectorAll('.player-marker').forEach(el => el.remove());
+  const byPos = {};
+  state.players.forEach(p => {
+    if (!byPos[p.position]) byPos[p.position] = [];
+    byPos[p.position].push(p);
+  });
+  Object.entries(byPos).forEach(([pos, players]) => {
+    const cellEl = document.querySelector(`.cell[data-index="${pos}"]`);
+    if (!cellEl) return;
+    const area = cellEl.querySelector('.marker-area');
+    if (!area) return;
+    players.forEach(p => {
+      const m = document.createElement('div');
+      m.className = 'player-marker';
+      m.style.background = p.hex;
+      m.textContent = p.nameShort;
+      area.appendChild(m);
+    });
+  });
+}
+
+/* =====================================================
+   界面更新
+   ===================================================== */
+function updateCenterPanel() {
+  if (!state.started) return;
+  const player = state.players[state.currentPlayerIndex];
+  const dot = document.getElementById('cpDot');
+  const name = document.getElementById('cpName');
+  const btn = document.getElementById('rollBtn');
+  if (!player || !dot || !name || !btn) return;
+  dot.style.background = player.hex;
+  dot.style.color = player.hex;
+  name.textContent = player.name;
+  name.style.color = player.hex;
+  btn.textContent = state.isRolling ? t('rolling') : t('roll');
+  btn.disabled = state.isRolling || state.gameOver;
+}
+
+function updateRoundDisplay() {
+  const el = document.getElementById('roundDisplay');
+  if (el) el.textContent = `${t('round')} ${state.roundNumber}`;
+}
+
+function updateCellVisual(index) {
+  const el = document.querySelector(`.cell[data-index="${index}"]`);
+  if (!el) return;
+  const overlay = el.querySelector('.cell-overlay');
+  if (!overlay) return;
+
+  overlay.innerHTML = '';
+  overlay.className = 'cell-overlay';
+
+  const ps = state.projectStates[index];
+  if (!ps) return;
+
+  if (ps.status === 'completed') {
+    overlay.classList.add('active', 'completed');
+    const payoutText = formatPayout(ps.payout);
+    overlay.innerHTML = `
+      <div class="payout-mini">
+        <div class="payout-mini-label">${t('payout')}</div>
+        <div class="payout-mini-amount">${payoutText}</div>
+      </div>
+    `;
+  } else if (ps.status === 'skipped') {
+    overlay.classList.add('active', 'skipped');
+    overlay.innerHTML = `<div class="x-mark">✕</div>`;
+  }
+}
+
+/* =====================================================
+   掷骰子与移动（已判定项目格直接跳过，不显示、不计步）
+   ===================================================== */
+async function rollDice() {
+  if (state.isRolling || !state.started || state.gameOver) return;
+  state.isRolling = true;
+  updateCenterPanel();
+
+  const diceEl = document.getElementById('dice');
+  const resultEl = document.getElementById('diceResult');
+  diceEl.classList.add('rolling');
+  resultEl.textContent = '';
+
+  const value = Math.floor(Math.random() * 6) + 1;
+
+  for (let i = 0; i < 12; i++) {
+    diceEl.textContent = Math.floor(Math.random() * 6) + 1;
+    await sleep(55);
+  }
+  diceEl.textContent = value;
+  diceEl.classList.remove('rolling');
+  resultEl.textContent = `${t('diceResult')}: ${value}`;
+
+  await sleep(350);
+
+  const player = state.players[state.currentPlayerIndex];
+
+  // 先算出实际要停留的格子序列：已判定的项目格完全跳过
+  const path = [];
+  let cursor = player.position;
+  let stepsRemaining = value;
+  let safety = 0;
+  while (stepsRemaining > 0 && safety < 300) {
+    safety++;
+    cursor = (cursor + 1) % CELL_COUNT;
+    if (isDecidedProject(cursor)) {
+      // 已判定项目格：直接跳过，不进入 path、不扣步数
+      continue;
+    }
+    path.push(cursor);
+    stepsRemaining--;
+  }
+
+  // 按路径逐格播放移动动画（只显示非判定格）
+  for (const pos of path) {
+    player.position = pos;
+    updateMarkers();
+    await sleep(170);
+  }
+
+  await sleep(200);
+  await handleLanding(player);
+  if (!state.gameOver) {
+    advanceTurn();
+  }
+}
+
+/* =====================================================
+   落点处理
+   ===================================================== */
+async function handleLanding(player) {
+  const idx = player.position;
+  const cell = state.board[idx];
+
+  if (cell.type === 'project') {
+    await handleProjectLanding(player, idx);
+  } else if (cell.type === 'draw') {
+    await handleDrawLanding(player);
+  }
+}
+
+async function handleProjectLanding(player, index) {
+  const cell = state.board[index];
+
+  // 防御性处理：已判定的项目格不应作为落点
+  if (isDecidedProject(index)) {
+    return;
+  }
+
+  const decision = await showProjectFlow(cell, player);
+
+  if (decision === 'complete') {
+    state.completedCount++;
+    const payout = state.completedCount * 10;
+    state.projectStates[index] = { status: 'completed', payout };
+    updateCellVisual(index);
+    await showPayoutModal(payout);
+  } else {
+    state.projectStates[index] = { status: 'skipped' };
+    updateCellVisual(index);
+  }
+
+  await checkGameEnd();
+}
+
+async function handleDrawLanding(player) {
+  await showSimpleModal(t('drewCard'), t('drewCardContent'), '#9b59b6');
+}
+
+/* =====================================================
+   项目流程：第一次询问 → 倒计时 10 秒 → 第二次询问
+   ===================================================== */
+async function showProjectFlow(cell, player) {
+  const first = await showProjectPrompt(cell, player, 1);
+  if (first === 'skip') return 'skip';
+
+  await showCountdown(10);
+
+  const second = await showProjectPrompt(cell, player, 2);
+  return second;
+}
+
+function showProjectPrompt(cell, player, stage) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+
+    const title = state.lang === 'zh' ? cell.nameZh : cell.nameEn;
+    let reqsHtml = '';
+    cell.reqs.forEach(profId => {
+      const prof = profById(profId);
+      reqsHtml += `<div class="req-item" style="background:${prof.hex};">${profName(prof)}</div>`;
+    });
+
+    const projectedPayout = (state.completedCount + 1) * 10;
+
+    const stageHint = stage === 2
+      ? `<div class="stage-hint">${t('confirmAgain')}</div>`
+      : '';
+
+    body.innerHTML = `
+      <div class="modal-player" style="color:${player.hex};">${player.name}</div>
+      <h2 class="modal-title">${title}</h2>
+      <div class="modal-payout"><span class="payout-badge">${formatPayout(projectedPayout)}</span></div>
+      <div class="payout-hint-small">${t('payoutHint')}</div>
+      <div class="modal-reqs-label">${t('requirements')}</div>
+      <div class="modal-reqs">${reqsHtml}</div>
+      ${stageHint}
+      <p class="modal-question">${t('doProject')}</p>
+      <div class="btn-row">
+        <button class="btn btn-complete" id="mBtnComplete">${t('complete')}</button>
+        <button class="btn btn-skip" id="mBtnSkip">${t('skip')}</button>
+      </div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    document.getElementById('mBtnComplete').onclick = () => {
+      overlay.classList.add('hidden');
+      resolve('complete');
+    };
+    document.getElementById('mBtnSkip').onclick = () => {
+      overlay.classList.add('hidden');
+      resolve('skip');
+    };
+  });
+}
+
+function showCountdown(seconds) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+
+    let remaining = seconds;
+
+    body.innerHTML = `
+      <div class="countdown-display" id="countdownDisplay">${remaining}</div>
+      <div class="countdown-label">${t('countdownLabel')}</div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    const display = document.getElementById('countdownDisplay');
+
+    const timer = setInterval(() => {
+      remaining--;
+      display.textContent = remaining;
+      display.classList.remove('pulse');
+      void display.offsetWidth;
+      display.classList.add('pulse');
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+          resolve();
+        }, 500);
+      }
+    }, 1000);
+  });
+}
+
+/* =====================================================
+   其他模态框
+   ===================================================== */
+function showPayoutModal(payout) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+
+    body.innerHTML = `
+      <div class="payout-card">
+        <div class="payout-label">${t('payout')}</div>
+        <div class="payout-amount">${formatPayout(payout)}</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-neutral" id="mBtnContinue">${t('continueBtn')}</button>
+      </div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    document.getElementById('mBtnContinue').onclick = () => {
+      overlay.classList.add('hidden');
+      resolve();
+    };
+  });
+}
+
+function showSimpleModal(title, contentHtml, color) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+
+    body.innerHTML = `
+      <h2 class="modal-title" style="color:${color};">${title}</h2>
+      <div class="modal-content-text">${contentHtml}</div>
+      <div class="btn-row">
+        <button class="btn btn-neutral" id="mBtnOK">${t('confirm')}</button>
+      </div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    document.getElementById('mBtnOK').onclick = () => {
+      overlay.classList.add('hidden');
+      resolve();
+    };
+  });
+}
+
+function showGameOverModal() {
+  return new Promise(() => {
+    const overlay = document.getElementById('modalOverlay');
+    const body = document.getElementById('modalBody');
+
+    body.innerHTML = `
+      <h2 class="modal-title" style="color:#f1c40f;">${t('gameOver')}</h2>
+      <div class="modal-content-text">${t('gameOverContent')}</div>
+      <div class="btn-row">
+        <button class="btn btn-neutral" id="mBtnRestart">${t('restart')}</button>
+      </div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    document.getElementById('mBtnRestart').onclick = () => {
+      location.reload();
+    };
+  });
+}
+
+/* =====================================================
+   结束判定
+   ===================================================== */
+async function checkGameEnd() {
+  if (state.gameOver) return;
+
+  const allDecided = state.board.every((cell, i) => {
+    if (cell.type !== 'project') return true;
+    const ps = state.projectStates[i];
+    return ps && (ps.status === 'completed' || ps.status === 'skipped');
+  });
+
+  if (allDecided) {
+    state.gameOver = true;
+    updateCenterPanel();
+    await showGameOverModal();
+  }
+}
+
+/* =====================================================
+   回合推进
+   ===================================================== */
+function advanceTurn() {
+  if (state.gameOver) return;
+
+  state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.playerCount;
+  state.turnsThisRound++;
+
+  if (state.turnsThisRound >= state.playerCount) {
+    state.turnsThisRound = 0;
+    state.roundNumber++;
+    updateRoundDisplay();
+    showToast(`${t('nextRound')} ${state.roundNumber}`, '#f1c40f');
+  }
+
+  state.isRolling = false;
+  updateCenterPanel();
+}
+
+/* =====================================================
+   Toast
+   ===================================================== */
+let toastTimer = null;
+function showToast(message, color) {
+  let toast = document.querySelector('.toast');
+  if (toast) toast.remove();
+  if (toastTimer) clearTimeout(toastTimer);
+
+  toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.style.borderLeftColor = color || '#58a6ff';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 400);
+  }, 2400);
+}
+
+/* =====================================================
+   重置
+   ===================================================== */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm(t('resetConfirm'))) location.reload();
+});
+
+updateStartScreenText();
+</script>
+</body>
+</html>
